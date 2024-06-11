@@ -1,16 +1,16 @@
-require('dotenv').config();
 const loginPage = require('../pageobjects/LoginPage');
 const inventoryPage = require('../pageobjects/InventoryPage');
 const cartPage = require('../pageobjects/CartPage');
 const checkoutPage = require('../pageobjects/CheckoutPage');
 const checkoutCompletePage = require('../pageobjects/CheckoutCompletePage');
+require('dotenv').config({ path: './credentials.env' });
 
 function getRandomUsername() {
     const usernames = process.env.USERNAMES.split(',');
     return usernames[Math.floor(Math.random() * (usernames.length))];
 }
 
-describe('My WebdriverIO Test', () => {
+describe('Swag Labs test', () => {
     let productPrice;
 
     before(async () => {
