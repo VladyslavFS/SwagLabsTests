@@ -1,53 +1,60 @@
-const LoginPage = require('../pageobjects/LoginPage');
-const InventoryPage = require('../pageobjects/InventoryPage');
-const CartPage = require('../pageobjects/CartPage');
-const CheckoutPage = require('../pageobjects/CheckoutPage');
-const CheckoutCompletePage = require('../pageobjects/CheckoutCompletePage');
+require('dotenv').config();
+const loginPage = require('../pageobjects/LoginPage');
+const inventoryPage = require('../pageobjects/InventoryPage');
+const cartPage = require('../pageobjects/CartPage');
+const checkoutPage = require('../pageobjects/CheckoutPage');
+const checkoutCompletePage = require('../pageobjects/CheckoutCompletePage');
+
+function getRandomUsername() {
+    const usernames = process.env.USERNAMES.split(',');
+    return usernames[Math.floor(Math.random() * (usernames.length))];
+}
 
 describe('My WebdriverIO Test', () => {
     let productPrice;
 
     before(async () => {
-        await LoginPage.open();
-        await LoginPage.login('standard_user', 'secret_sauce');
-        await InventoryPage.open();
+        const userName = getRandomUsername(); 
+        await loginPage.open();
+        await loginPage.login(userName, process.env.PASSWORD);
+        await inventoryPage.open();
     });
 
     it('should add product to cart and complete the checkout process', async () => {
-        await InventoryPage.addItemToCart();
-        expect(await InventoryPage.cartBadge.getText()).toBe('1');
-        productPrice = await InventoryPage.getProductPrice();
+        await inventoryPage.addItemToCart();
+        expect(await inventoryPage.cartBadge.getText()).toBe('1');
+        productPrice = await inventoryPage.getProductPrice();
     });
 
     it('should display cart page with product from step 1', async() => {
-        await InventoryPage.goToCart();
-        await CartPage.waitForPage();
-        expect(await CartPage.item.isDisplayed()).toBe(true);
+        await inventoryPage.goToCart();
+        await cartPage.waitForPage();
+        expect(await cartPage.item.isDisplayed()).toBe(true);
     });
 
     it('should display checkout form', async() => {
-        await CartPage.proceedToCheckout();
-        await CheckoutPage.waitForPage();
-        expect(await CheckoutPage.checkoutContainer.isDisplayed()).toBe(true);
+        await cartPage.proceedToCheckout();
+        await checkoutPage.waitForPage();
+        expect(await checkoutPage.checkoutContainer.isDisplayed()).toBe(true);
     });
 
     it('should input first name', async() => {
-        await CheckoutPage.fillCheckoutForm('Vladyslav', '', '');
-        expect(await CheckoutPage.inputFirstName.getAttribute('value')).toBe('Vladyslav');
+        await checkoutPage.fillCheckoutForm('Vladyslav', '', '');
+        expect(await checkoutPage.inputFirstName.getAttribute('value')).toBe('Vladyslav');
     });
 
     it('should input last name', async() => {
-        await CheckoutPage.fillCheckoutForm('', 'Fushtor', '');
-        expect(await CheckoutPage.inputLastName.getAttribute('value')).toBe('Fushtor');
+        await checkoutPage.fillCheckoutForm('', 'Fushtor', '');
+        expect(await checkoutPage.inputLastName.getAttribute('value')).toBe('Fushtor');
     });
 
     it('should input postal code', async() => {
-        await CheckoutPage.fillCheckoutForm('', '', '46000');
-        expect(await CheckoutPage.inputPostalCode.getAttribute('value')).toBe('46000');
+        await checkoutPage.fillCheckoutForm('', '', '46000');
+        expect(await checkoutPage.inputPostalCode.getAttribute('value')).toBe('46000');
     });
 
     it('should redirect to the "Overview" page and display items from step 1', async() => {
-        await CheckoutPage.continueToOverview();
+        await checkoutPage.continueToOverview();
         const checkoutOverviewTitle = await $('div.header_secondary_container span.title');
         const subtotalElement = await $('.summary_subtotal_label');
         const subtotalText = await subtotalElement.getText();
@@ -55,17 +62,17 @@ describe('My WebdriverIO Test', () => {
         const priceText = parts[1].trim();
 
         expect(await checkoutOverviewTitle.isDisplayed()).toBe(true);
-        expect(await CartPage.item.isDisplayed()).toBe(true);
+        expect(await cartPage.item.isDisplayed()).toBe(true);
         expect(await priceText).toBe(productPrice);
     });
 
     it('should redirect to the "Checkout Complete" page', async() => {
-        await CheckoutCompletePage.finishCheckout();
-        await CheckoutCompletePage.verifyCheckoutComplete();
+        await checkoutCompletePage.finishCheckout();
+        await checkoutCompletePage.verifyCheckoutComplete();
     });
 
     it('should redirect to the inventory page', async() => {
-        await CheckoutCompletePage.backToInventory();
+        await checkoutCompletePage.backToInventory();
         const inventory = await $('.inventory_list');
         expect(await inventory.isDisplayed()).toBe(true);
     });
@@ -79,15 +86,14 @@ describe('My WebdriverIO Test', () => {
             timeoutMsg: 'The menu wrap did not become visible within 5 seconds'
         });
 
-        await InventoryPage.addItemToCart();
-        await InventoryPage.cartBadge.waitForDisplayed({ timeout: 2000 });
+        await inventoryPage.addItemToCart();
+        await inventoryPage.cartBadge.waitForDisplayed({ timeout: 2000 });
 
-        await InventoryPage.resetAppState();
+        await inventoryPage.resetAppState();
 
-        if (!(await InventoryPage.cartBadge.isExisting())) {
-            expect(await InventoryPage.removeButton.isDisplayed()).toBe(true);
-        } else {
-            console.log('Test failed');
+        if (!(await inventoryPage.cartBadge.isExisting())) {
+            expect(await inventoryPage.removeButton.isDisplayed()).toBe(false);
         }
+
     });
 });
