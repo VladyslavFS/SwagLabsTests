@@ -15,7 +15,7 @@ describe('Swag Labs test', () => {
     let productPrice;
 
     before(async () => {
-        const userName = getRandomUsername(); 
+        const userName = getRandomUsername();
         await loginPage.open();
         await loginPage.login(userName, process.env.PASSWORD);
         await inventoryPage.waitForPageOpen();
