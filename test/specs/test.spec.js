@@ -1,8 +1,9 @@
-const loginPage = require('../pageobjects/LoginPage');
-const inventoryPage = require('../pageobjects/InventoryPage');
+const { faker } = require('@faker-js/faker');
 const cartPage = require('../pageobjects/CartPage');
 const checkoutPage = require('../pageobjects/CheckoutPage');
 const checkoutCompletePage = require('../pageobjects/CheckoutCompletePage');
+const loginPage = require('../pageobjects/LoginPage');
+const inventoryPage = require('../pageobjects/InventoryPage');
 require('dotenv').config({ path: './credentials.env' });
 
 function getRandomUsername() {
@@ -17,7 +18,7 @@ describe('Swag Labs test', () => {
         const userName = getRandomUsername(); 
         await loginPage.open();
         await loginPage.login(userName, process.env.PASSWORD);
-        await inventoryPage.open();
+        await inventoryPage.waitForPageOpen();
     });
 
     it('should add product to cart and complete the checkout process', async () => {
@@ -39,31 +40,32 @@ describe('Swag Labs test', () => {
     });
 
     it('should input first name', async() => {
-        await checkoutPage.fillCheckoutForm('Vladyslav', '', '');
-        expect(await checkoutPage.inputFirstName.getAttribute('value')).toBe('Vladyslav');
+        const firstName = faker.name.firstName();
+        await checkoutPage.fillCheckoutForm(firstName, '', '');
+        expect(await checkoutPage.inputFirstName.getAttribute('value')).toBe(firstName);
     });
 
     it('should input last name', async() => {
-        await checkoutPage.fillCheckoutForm('', 'Fushtor', '');
-        expect(await checkoutPage.inputLastName.getAttribute('value')).toBe('Fushtor');
+        const lastName = faker.name.lastName();
+        await checkoutPage.fillCheckoutForm('', lastName, '');
+        expect(await checkoutPage.inputLastName.getAttribute('value')).toBe(lastName);
     });
 
     it('should input postal code', async() => {
-        await checkoutPage.fillCheckoutForm('', '', '46000');
-        expect(await checkoutPage.inputPostalCode.getAttribute('value')).toBe('46000');
+        const postalCode = faker.address.zipCode();
+        await checkoutPage.fillCheckoutForm('', '', postalCode);
+        expect(await checkoutPage.inputPostalCode.getAttribute('value')).toBe(postalCode);
     });
 
     it('should redirect to the "Overview" page and display items from step 1', async() => {
         await checkoutPage.continueToOverview();
-        const checkoutOverviewTitle = await $('div.header_secondary_container span.title');
-        const subtotalElement = await $('.summary_subtotal_label');
-        const subtotalText = await subtotalElement.getText();
+        const subtotalText = await checkoutPage.getSubtotalText();
         const parts = subtotalText.split(':');
         const priceText = parts[1].trim();
 
-        expect(await checkoutOverviewTitle.isDisplayed()).toBe(true);
-        expect(await cartPage.item.isDisplayed()).toBe(true);
-        expect(await priceText).toBe(productPrice);
+        expect(await checkoutPage.titleDisplayed()).toBe(true);
+        expect(await cartPage.itemDisplayed()).toBe(true);
+        expect(priceText).toBe(productPrice);
     });
 
     it('should redirect to the "Checkout Complete" page', async() => {
@@ -73,27 +75,16 @@ describe('Swag Labs test', () => {
 
     it('should redirect to the inventory page', async() => {
         await checkoutCompletePage.backToInventory();
-        const inventory = await $('.inventory_list');
-        expect(await inventory.isDisplayed()).toBe(true);
+        expect(await checkoutCompletePage.inventoryDisplayed()).toBe(true);
     });
 
     it('should display remove button when cart is empty', async() => {
-        const menuButton = await $('#react-burger-menu-btn');
-        menuButton.click();
-        const menuWrap = await $('div.bm-menu-wrap');
-        browser.waitUntil(() => menuWrap.getAttribute('aria-hidden') === 'false', {
-            timeout: 5000,
-            timeoutMsg: 'The menu wrap did not become visible within 5 seconds'
-        });
-
+        await inventoryPage.openSidebar();
         await inventoryPage.addItemToCart();
         await inventoryPage.cartBadge.waitForDisplayed({ timeout: 2000 });
-
         await inventoryPage.resetAppState();
 
-        if (!(await inventoryPage.cartBadge.isExisting())) {
-            expect(await inventoryPage.removeButton.isDisplayed()).toBe(false);
-        }
-
+        expect(await inventoryPage.cartBadge.isExisting()).toBe(false);
+        expect(await inventoryPage.removeButton.isDisplayed()).toBe(false);
     });
 });
